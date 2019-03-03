@@ -5,10 +5,17 @@ import Processor.Controller.ProcessorController;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class MainFrame extends JFrame {
 
-    private String mode;
+    private static final String LOG = "Log";
+    private static final String PROCESSOR = "Processor";
+
+    private String page;
     private JMenu menu;
     private JMenuItem newLog;
     private JMenuItem load;
@@ -18,25 +25,57 @@ public class MainFrame extends JFrame {
     private LogController logController;
     private ProcessorController processorController;
 
-    public MainFrame() {
+    public MainFrame(String args[]) {
         super("LogProcessor");
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        this.setSize(1239, 871);
+        this.setSize(1101, 884);
         this.setLocationRelativeTo(null);
-        this.setBackground(Color.green);
         mainpanel = new JPanel();
         this.setContentPane(mainpanel);
         mainpanel.setLayout(new CardLayout());
         initialization();
         this.setVisible(true);
+        logController.setsplit(0.5);
+        processorController.setsplit(0.5);
+        if(args.length != 0) {
+            System.out.println(args[0]);
+            File file = new File(args[0]);
+            JTextArea jTextArea = logController.getLogText().getBeforeFiltering();
+            jTextArea.setText("");
+            FileInputStream fileinstream = null;
+            try {
+                fileinstream = new FileInputStream(file);
+            }
+            catch (FileNotFoundException fe) {
+
+            }
+            try {
+                byte buffer[] = new byte[(int) file.length()];
+                fileinstream.read(buffer);
+                String s = new String(buffer, "UTF-8");
+                jTextArea.append(s);
+            }
+            catch (IOException ioe) {
+
+            }
+            finally {
+                try {
+                    if (fileinstream != null)
+                        fileinstream.close();
+                }
+                catch (IOException ioe2) {
+                }
+            }
+            logController.getLogToolbar().getFilterButton().doClick();
+            logController.getLogToolbar().getProcessButton().doClick();
+        }
     }
 
     private void initialization() {
-        mode = "Log";
         setMenu();
         logController = new LogController(this);
         processorController = new ProcessorController(this);
-        changeToBuildMode();
+        changeToLogPage();
     }
 
     private void setMenu() {
@@ -55,20 +94,20 @@ public class MainFrame extends JFrame {
         setJMenuBar(menuBar);
     }
 
-    public void changeToBuildMode() {
-        mode = "Build";
-        //setTitle("BuildScene");
+    public void changeToLogPage() {
+        page = LOG;
+//        setTitle("Log");
         menu.setEnabled(true);
         CardLayout cardLayout = (CardLayout) mainpanel.getLayout();
-        cardLayout.show(mainpanel,mode);
+        cardLayout.show(mainpanel,page);
     }
 
-    public void changeToGameMode() {
-        mode = "Game";
-        //setTitle("GameScene");
+    public void changeToProcessorPage() {
+        page = PROCESSOR;
+//        setTitle("Processor");
         menu.setEnabled(false);
         CardLayout cardLayout = (CardLayout) mainpanel.getLayout();
-        cardLayout.show(mainpanel,mode);
+        cardLayout.show(mainpanel,page);
     }
 
     public JMenuItem getNewLog() {
@@ -84,11 +123,11 @@ public class MainFrame extends JFrame {
     }
 
     public void addLogPanel(JPanel logPanel) {
-        mainpanel.add(logPanel,"Log");
+        mainpanel.add(logPanel,LOG);
     }
 
     public void addProcessorPanel(JPanel processorPanel) {
-        mainpanel.add(processorPanel,"Processor");
+        mainpanel.add(processorPanel,PROCESSOR);
     }
 
     public LogController getLogController() {
